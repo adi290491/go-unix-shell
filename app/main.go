@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strconv"
+	"strings"
 )
 
 // Ensures gofmt doesn't remove the "fmt" and "os" imports in stage 1 (feel free to remove this!)
@@ -23,6 +25,27 @@ func main() {
 			os.Exit(1)
 		}
 
-		fmt.Fprintf(os.Stdout, "%s: command not found\n", command[:len(command)-1])
+		if err = execCommand(command); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+		}
 	}
+}
+
+func execCommand(command string) error {
+	command = strings.TrimSuffix(command, "\n")
+
+	args := strings.Split(command, " ")
+
+	switch args[0] {
+	case "exit":
+		code, err := strconv.Atoi(args[1])
+		if err != nil {
+			return err
+		}
+		os.Exit(code)
+	default:
+		// fmt.Println("Invalid command case")
+		return fmt.Errorf("%s: command not found", command)
+	}
+	return nil
 }
