@@ -44,7 +44,7 @@ func execCommand(command string) error {
 		}
 		os.Exit(code)
 	case "echo":
-		fmt.Fprintln(os.Stdout, args[1:])
+		fmt.Fprintln(os.Stdout, strings.Join(args[1:], " "))
 	default:
 		// fmt.Println("Invalid command case")
 		return fmt.Errorf("%s: command not found", command)
