@@ -12,6 +12,12 @@ import (
 var _ = fmt.Fprint
 var _ = os.Stdout
 
+var commandSets = map[string]bool{
+	"echo": true,
+	"exit": true,
+	"type": true,
+}
+
 func main() {
 	// TODO: Uncomment the code below to pass the first stage
 	for {
@@ -45,6 +51,12 @@ func execCommand(command string) error {
 		os.Exit(code)
 	case "echo":
 		fmt.Fprintln(os.Stdout, strings.Join(args[1:], " "))
+	case "type":
+		if ok := commandSets[args[1]]; ok {
+			fmt.Fprintf(os.Stdout, "%s is a shell builtin\n", args[1])
+		} else {
+			fmt.Fprintf(os.Stdout, "%s: not found\n", args[1])
+		}
 	default:
 		// fmt.Println("Invalid command case")
 		return fmt.Errorf("%s: command not found", command)
