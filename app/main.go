@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 )
@@ -12,4 +13,13 @@ var _ = os.Stdout
 func main() {
 	// TODO: Uncomment the code below to pass the first stage
 	fmt.Fprint(os.Stdout, "$ ")
+	reader := bufio.NewReader(os.Stdin)
+
+	command, err := reader.ReadString('\n')
+
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+	}
+
+	fmt.Fprintf(os.Stdout, "%s: command not found", command[:len(command)-1])
 }
