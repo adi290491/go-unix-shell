@@ -12,14 +12,17 @@ var _ = os.Stdout
 
 func main() {
 	// TODO: Uncomment the code below to pass the first stage
-	fmt.Fprint(os.Stdout, "$ ")
-	reader := bufio.NewReader(os.Stdin)
+	for {
+		fmt.Fprint(os.Stdout, "$ ")
+		reader := bufio.NewReader(os.Stdin)
 
-	command, err := reader.ReadString('\n')
+		command, err := reader.ReadString('\n')
 
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+
+		fmt.Fprintf(os.Stdout, "%s: command not found\n", command[:len(command)-1])
 	}
-
-	fmt.Fprintf(os.Stdout, "%s: command not found", command[:len(command)-1])
 }
