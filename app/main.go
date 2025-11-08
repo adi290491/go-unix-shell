@@ -75,7 +75,13 @@ func execCommand(command string) error {
 		}
 		fmt.Fprintf(out, "%s\n", pwd)
 	case "cd":
+
+		if args[1] == "~" {
+			args[1] = os.Getenv("HOME")
+		}
+
 		err := os.Chdir(args[1])
+
 		if err != nil {
 			return fmt.Errorf("cd: %s: No such file or directory", args[1])
 		}
