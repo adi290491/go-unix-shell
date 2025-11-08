@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 )
@@ -57,34 +58,90 @@ func execCommand(command string) error {
 		} else {
 
 			cmd := args[1]
-			directories := strings.Split(os.Getenv("PATH"), ":")
 
-			for _, dir := range directories {
-
-				path := dir + "/" + cmd
-
-				fi, err := os.Stat(path) // returns file info
-
-				if err != nil {
-					if os.IsNotExist(err) { // err if file does not exist
-						continue
-					}
-				}
-
-				if !fi.IsDir() { // check if file is not a dir
-
-					if fi.Mode()&0111 != 0 { // get file mode bits in RWX format
-						fmt.Fprintf(out, "%s is %s\n", cmd, path)
-						return nil
-					}
-
-				}
+			if path, ok := isExecutable(cmd); ok {
+				fmt.Fprintf(out, "%s is %s\n", cmd, path)
+				return nil
 			}
+			// directories := strings.Split(os.Getenv("PATH"), ":")
+
+			// for _, dir := range directories {
+
+			// 	path := dir + "/" + cmd
+
+			// 	if fi, ok := isExecutable(path); !ok {
+			// 		continue
+			// 	} else {
+			// 		if fi.Mode()&0111 != 0 { // get file mode bits in RWX format
+			// 			fmt.Fprintf(out, "%s is %s\n", cmd, path)
+			// 			return nil
+			// 		}
+			// 	}
+
+			// 	// fi, err := os.Stat(path) // returns file info
+
+			// 	// if err != nil {
+			// 	// 	if os.IsNotExist(err) { // err if file does not exist
+			// 	// 		continue
+			// 	// 	}
+			// 	// }
+
+			// 	// if !fi.IsDir() { // check if file is not a dir
+
+			// 	// 	if fi.Mode()&0111 != 0 { // get file mode bits in RWX format
+			// 	// 		fmt.Fprintf(out, "%s is %s\n", cmd, path)
+			// 	// 		return nil
+			// 	// 	}
+
+			// 	// }
+			// }
 			return fmt.Errorf("%s: not found", args[1])
 		}
 	default:
+
+		// cmd, arguments := args[0], args[1:]
+
+		// fmt.Printf("Command: %+v\tArgs: %+v\n", cmd, arguments)
+		if _, ok := isExecutable(args[0]); ok {
+			// fmt.Fprintf(out, "%s is %s\n", cmd, path)
+
+			// prepare the command to execute
+			command := exec.Command(args[0], args[1:]...)
+			// fmt.Printf("Command to execute: %+v", command)
+			command.Stderr = os.Stderr
+			command.Stdout = out
+
+			return command.Run()
+		}
 		// fmt.Println("Invalid command case")
 		return fmt.Errorf("%s: command not found", command)
 	}
 	return nil
+}
+
+func isExecutable(cmd string) (string, bool) {
+
+	// directories := strings.Split(os.Getenv("PATH"), ":")
+
+	// for _, dir := range directories {
+
+	// 	path := dir + "/" + cmd
+	// 	// fmt.Println("Path:", path)
+	// 	fi, err := os.Stat(path)
+	// 	if err != nil {
+	// 		continue
+	// 	}
+
+	// 	if fi.IsDir() {
+	// 		return "", false
+	// 	}
+
+	// 	return path, fi.Mode()&0111 != 0
+	// }
+	// return "", false
+	path, err := exec.LookPath(cmd)
+	if err != nil {
+		return "", false
+	}
+	return path, true
 }
