@@ -9,8 +9,8 @@ import (
 )
 
 // Ensures gofmt doesn't remove the "fmt" and "os" imports in stage 1 (feel free to remove this!)
-var _ = fmt.Fprint
-var _ = os.Stdout
+var pnt = fmt.Fprint
+var out = os.Stdout
 
 var commandSets = map[string]bool{
 	"echo": true,
@@ -55,6 +55,31 @@ func execCommand(command string) error {
 		if ok := commandSets[args[1]]; ok {
 			fmt.Fprintf(os.Stdout, "%s is a shell builtin\n", args[1])
 		} else {
+
+			cmd := args[1]
+			directories := strings.Split(os.Getenv("PATH"), ":")
+
+			for _, dir := range directories {
+
+				path := dir + "/" + cmd
+
+				fi, err := os.Stat(path)
+
+				if err != nil {
+					if os.IsNotExist(err) {
+						continue
+					}
+				}
+
+				if !fi.IsDir() {
+
+					if fi.Mode()&0111 != 0 {
+						fmt.Fprintf(out, "%s is %s\n", cmd, path)
+						return nil
+					}
+
+				}
+			}
 			fmt.Fprintf(os.Stdout, "%s: not found\n", args[1])
 		}
 	default:
