@@ -18,6 +18,7 @@ var commandSets = map[string]bool{
 	"exit": true,
 	"type": true,
 	"pwd":  true,
+	"cd":   true,
 }
 
 func main() {
@@ -73,6 +74,8 @@ func execCommand(command string) error {
 			return err
 		}
 		fmt.Fprintf(out, "%s\n", pwd)
+	case "cd":
+		os.Chdir(args[1])
 	default:
 
 		// cmd, arguments := args[0], args[1:]
