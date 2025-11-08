@@ -63,24 +63,24 @@ func execCommand(command string) error {
 
 				path := dir + "/" + cmd
 
-				fi, err := os.Stat(path)
+				fi, err := os.Stat(path) // returns file info
 
 				if err != nil {
-					if os.IsNotExist(err) {
+					if os.IsNotExist(err) { // err if file does not exist
 						continue
 					}
 				}
 
-				if !fi.IsDir() {
+				if !fi.IsDir() { // check if file is not a dir
 
-					if fi.Mode()&0111 != 0 {
+					if fi.Mode()&0111 != 0 { // get file mode bits in RWX format
 						fmt.Fprintf(out, "%s is %s\n", cmd, path)
 						return nil
 					}
 
 				}
 			}
-			fmt.Fprintf(os.Stdout, "%s: not found\n", args[1])
+			return fmt.Errorf("%s: not found", args[1])
 		}
 	default:
 		// fmt.Println("Invalid command case")
