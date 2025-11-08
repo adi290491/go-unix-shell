@@ -17,6 +17,7 @@ var commandSets = map[string]bool{
 	"echo": true,
 	"exit": true,
 	"type": true,
+	"pwd":  true,
 }
 
 func main() {
@@ -63,40 +64,15 @@ func execCommand(command string) error {
 				fmt.Fprintf(out, "%s is %s\n", cmd, path)
 				return nil
 			}
-			// directories := strings.Split(os.Getenv("PATH"), ":")
 
-			// for _, dir := range directories {
-
-			// 	path := dir + "/" + cmd
-
-			// 	if fi, ok := isExecutable(path); !ok {
-			// 		continue
-			// 	} else {
-			// 		if fi.Mode()&0111 != 0 { // get file mode bits in RWX format
-			// 			fmt.Fprintf(out, "%s is %s\n", cmd, path)
-			// 			return nil
-			// 		}
-			// 	}
-
-			// 	// fi, err := os.Stat(path) // returns file info
-
-			// 	// if err != nil {
-			// 	// 	if os.IsNotExist(err) { // err if file does not exist
-			// 	// 		continue
-			// 	// 	}
-			// 	// }
-
-			// 	// if !fi.IsDir() { // check if file is not a dir
-
-			// 	// 	if fi.Mode()&0111 != 0 { // get file mode bits in RWX format
-			// 	// 		fmt.Fprintf(out, "%s is %s\n", cmd, path)
-			// 	// 		return nil
-			// 	// 	}
-
-			// 	// }
-			// }
 			return fmt.Errorf("%s: not found", args[1])
 		}
+	case "pwd":
+		pwd, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+		fmt.Fprintf(out, "%s\n", pwd)
 	default:
 
 		// cmd, arguments := args[0], args[1:]
@@ -121,25 +97,7 @@ func execCommand(command string) error {
 
 func isExecutable(cmd string) (string, bool) {
 
-	// directories := strings.Split(os.Getenv("PATH"), ":")
-
-	// for _, dir := range directories {
-
-	// 	path := dir + "/" + cmd
-	// 	// fmt.Println("Path:", path)
-	// 	fi, err := os.Stat(path)
-	// 	if err != nil {
-	// 		continue
-	// 	}
-
-	// 	if fi.IsDir() {
-	// 		return "", false
-	// 	}
-
-	// 	return path, fi.Mode()&0111 != 0
-	// }
-	// return "", false
-	path, err := exec.LookPath(cmd)
+	path, err := exec.LookPath(cmd) // look for executable in PATH env variable
 	if err != nil {
 		return "", false
 	}
