@@ -118,7 +118,6 @@ func execCommand(command string) error {
 
 			return command.Run()
 		}
-		// fmt.Println("Invalid command case")
 		return fmt.Errorf("%s: command not found", command)
 	}
 	return nil
@@ -126,7 +125,7 @@ func execCommand(command string) error {
 
 func isExecutable(cmd string) (string, bool) {
 
-	path, err := exec.LookPath(cmd) // look for executable in PATH env variable
+	path, err := exec.LookPath(cmd)
 	if err != nil {
 		return "", false
 	}
@@ -135,17 +134,21 @@ func isExecutable(cmd string) (string, bool) {
 
 func parseArgString(args string) []string {
 
-	parsedArgs := []string{} // [test]
-	isQuote := false
-	var b strings.Builder //
-	// test     hello -> this string without quote should end up with just one space
+	parsedArgs := []string{}
+	isSingleQuote := false
+	isDoubleQuote := false
+	var b strings.Builder
 
 	for _, r := range args {
-		if r == '\'' {
-			isQuote = !isQuote
+		if r == '"' {
+			isDoubleQuote = !isDoubleQuote
 			continue
 		}
-		if r == ' ' && !isQuote {
+		if r == '\'' && !isDoubleQuote {
+			isSingleQuote = !isSingleQuote
+			continue
+		}
+		if r == ' ' && !isSingleQuote && !isDoubleQuote {
 			if b.Len() > 0 {
 				parsedArgs = append(parsedArgs, b.String())
 				b.Reset()
