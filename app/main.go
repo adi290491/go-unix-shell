@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"strconv"
@@ -53,7 +54,9 @@ func execCommand(command string) error {
 		}
 		os.Exit(code)
 	case "echo":
-		fmt.Fprintln(os.Stdout, strings.Join(args[1:], " "))
+		parsedArgs := parseArgString(strings.Join(args[1:], " "))
+		outputStrings := strings.Join(parsedArgs, " ")
+		fmt.Fprintln(os.Stdout, outputStrings)
 	case "type":
 		if ok := commandSets[args[1]]; ok {
 			fmt.Fprintf(os.Stdout, "%s is a shell builtin\n", args[1])
@@ -68,6 +71,16 @@ func execCommand(command string) error {
 
 			return fmt.Errorf("%s: not found", args[1])
 		}
+	case "cat":
+		// args[1] = parseArgString(args[1])
+		// args[2] = parseArgString(args[2])
+		// fmt.Println("Args1: ", args[1])
+		// fmt.Println("Args2: ", args[2])
+		copyCmd := exec.Command(args[0], args[1], args[2])
+		copyCmd.Stderr = os.Stderr
+		copyCmd.Stdout = out
+
+		return copyCmd.Run()
 	case "pwd":
 		pwd, err := os.Getwd()
 		if err != nil {
@@ -115,3 +128,40 @@ func isExecutable(cmd string) (string, bool) {
 	}
 	return path, true
 }
+
+func parseArgString(args string) []string {
+
+	parsedArgs := []string{}
+	isQuote := false
+	var b strings.Builder
+
+	for _, r := range args {
+		if r == '\'' {
+			isQuote = !isQuote
+			continue
+		}
+		if r == ' ' && !isQuote {
+			parsedArgs = append(parsedArgs, b.String())
+			b.Reset()
+			continue
+		}
+		b.WriteRune(r)
+	}
+
+	parsedArgs = append(parsedArgs, b.String())
+	log.Printf("ParsedArgs: %+v", parsedArgs)
+	return parsedArgs
+}
+
+/*
+parsedArgs = []string{}
+if quote then isQuote = !isQuote
+if isQuote
+  accum(c)
+  continue
+else
+  accum(c)
+  continue
+
+
+*/
