@@ -48,12 +48,16 @@ func execCommand(command string) error {
 
 	switch args[0] {
 	case "exit":
+		if len(args) == 1 {
+			os.Exit(0)
+		}
 		code, err := strconv.Atoi(args[1])
 		if err != nil {
 			return err
 		}
 		os.Exit(code)
 	case "echo":
+		// parsedArgs := parseArgString("test     hello")
 		parsedArgs := parseArgString(strings.Join(args[1:], " "))
 		outputStrings := strings.Join(parsedArgs, " ")
 		fmt.Fprintln(os.Stdout, outputStrings)
@@ -72,11 +76,11 @@ func execCommand(command string) error {
 			return fmt.Errorf("%s: not found", args[1])
 		}
 	case "cat":
-		// args[1] = parseArgString(args[1])
-		// args[2] = parseArgString(args[2])
-		// fmt.Println("Args1: ", args[1])
-		// fmt.Println("Args2: ", args[2])
-		copyCmd := exec.Command(args[0], args[1], args[2])
+
+		// parsedArgs := parseArgString("'/tmp/ant/f   84' '/tmp/ant/f   68' '/tmp/ant/f   25'")
+		parsedArgs := parseArgString(strings.Join(args[1:], " "))
+
+		copyCmd := exec.Command(args[0], parsedArgs...)
 		copyCmd.Stderr = os.Stderr
 		copyCmd.Stdout = out
 
@@ -131,9 +135,10 @@ func isExecutable(cmd string) (string, bool) {
 
 func parseArgString(args string) []string {
 
-	parsedArgs := []string{}
+	parsedArgs := []string{} // [test]
 	isQuote := false
-	var b strings.Builder
+	var b strings.Builder //
+	// test     hello -> this string without quote should end up with just one space
 
 	for _, r := range args {
 		if r == '\'' {
@@ -141,16 +146,23 @@ func parseArgString(args string) []string {
 			continue
 		}
 		if r == ' ' && !isQuote {
-			parsedArgs = append(parsedArgs, b.String())
-			b.Reset()
+			if b.Len() > 0 {
+				parsedArgs = append(parsedArgs, b.String())
+				b.Reset()
+			}
 			continue
 		}
 		b.WriteRune(r)
 	}
 
 	parsedArgs = append(parsedArgs, b.String())
-	log.Printf("ParsedArgs: %+v", parsedArgs)
 	return parsedArgs
+}
+
+func printSliceWithIndexAndVal(s []string) {
+	for i, v := range s {
+		log.Println(i, v)
+	}
 }
 
 /*
