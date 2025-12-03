@@ -135,26 +135,63 @@ func isExecutable(cmd string) (string, bool) {
 func parseArgString(args string) []string {
 
 	parsedArgs := []string{}
+	// isBackslash := false
 	isSingleQuote := false
 	isDoubleQuote := false
 	var b strings.Builder
 
-	for _, r := range args {
+	for i, r := range args {
+		if r == '\\' {
+			// inside single quotes: backslash is literal
+			if isSingleQuote {
+				b.WriteRune('\\')
+				continue
+			}
+
+			// if last char, backslash is literal
+			if i == len(args)-1 {
+				b.WriteRune('\\')
+				continue
+			}
+
+			next := rune(args[i+1])
+			if isDoubleQuote {
+				// inside double quotes, backslash only escapes ", \, $, `
+				if next == '"' || next == '\\' || next == '$' || next == '`' {
+					continue
+				} else {
+					b.WriteRune('\\')
+					continue
+				}
+			}
+
+			// Outside of any quotes: backslash escapes the next char
+			continue
+		}
 		if r == '"' {
-			isDoubleQuote = !isDoubleQuote
+			if i > 0 && args[i-1] == '\\' {
+				b.WriteRune(r)
+			} else {
+				isDoubleQuote = !isDoubleQuote
+			}
 			continue
 		}
 		if r == '\'' && !isDoubleQuote {
-			isSingleQuote = !isSingleQuote
+			if i > 0 && args[i-1] == '\\' {
+				b.WriteRune(r)
+			} else {
+				isSingleQuote = !isSingleQuote
+			}
 			continue
 		}
-		if r == ' ' && !isSingleQuote && !isDoubleQuote {
+		if r == ' ' && !isSingleQuote && !isDoubleQuote && (i > 0 && args[i-1] != '\\') {
 			if b.Len() > 0 {
 				parsedArgs = append(parsedArgs, b.String())
 				b.Reset()
 			}
 			continue
 		}
+
 		b.WriteRune(r)
 	}
 
