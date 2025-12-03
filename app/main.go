@@ -45,42 +45,39 @@ func execCommand(command string) error {
 	command = strings.TrimSuffix(command, "\n")
 
 	args := strings.Split(command, " ")
+	parsedArgs := parseArgString(strings.Join(args, " "))
 
-	switch args[0] {
+	switch parsedArgs[0] {
 	case "exit":
-		if len(args) == 1 {
+		if len(parsedArgs) == 1 {
 			os.Exit(0)
 		}
-		code, err := strconv.Atoi(args[1])
+		code, err := strconv.Atoi(parsedArgs[1])
 		if err != nil {
 			return err
 		}
 		os.Exit(code)
 	case "echo":
-		// parsedArgs := parseArgString("test     hello")
-		parsedArgs := parseArgString(strings.Join(args[1:], " "))
-		outputStrings := strings.Join(parsedArgs, " ")
+
+		outputStrings := strings.Join(parsedArgs[1:], " ")
 		fmt.Fprintln(os.Stdout, outputStrings)
 	case "type":
-		if ok := commandSets[args[1]]; ok {
-			fmt.Fprintf(os.Stdout, "%s is a shell builtin\n", args[1])
+		if ok := commandSets[parsedArgs[1]]; ok {
+			fmt.Fprintf(os.Stdout, "%s is a shell builtin\n", parsedArgs[1])
 		} else {
 
-			cmd := args[1]
+			cmd := parsedArgs[1]
 
 			if path, ok := isExecutable(cmd); ok {
 				fmt.Fprintf(out, "%s is %s\n", cmd, path)
 				return nil
 			}
 
-			return fmt.Errorf("%s: not found", args[1])
+			return fmt.Errorf("%s: not found", parsedArgs[1])
 		}
 	case "cat":
 
-		// parsedArgs := parseArgString("'/tmp/ant/f   84' '/tmp/ant/f   68' '/tmp/ant/f   25'")
-		parsedArgs := parseArgString(strings.Join(args[1:], " "))
-
-		copyCmd := exec.Command(args[0], parsedArgs...)
+		copyCmd := exec.Command(parsedArgs[0], parsedArgs[1:]...)
 		copyCmd.Stderr = os.Stderr
 		copyCmd.Stdout = out
 
@@ -93,26 +90,23 @@ func execCommand(command string) error {
 		fmt.Fprintf(out, "%s\n", pwd)
 	case "cd":
 
-		if args[1] == "~" {
-			args[1] = os.Getenv("HOME")
+		if parsedArgs[1] == "~" {
+			parsedArgs[1] = os.Getenv("HOME")
 		}
 
-		err := os.Chdir(args[1])
+		err := os.Chdir(parsedArgs[1])
 
 		if err != nil {
-			return fmt.Errorf("cd: %s: No such file or directory", args[1])
+			return fmt.Errorf("cd: %s: No such file or directory", parsedArgs[1])
 		}
 	default:
 
-		// cmd, arguments := args[0], args[1:]
 
-		// fmt.Printf("Command: %+v\tArgs: %+v\n", cmd, arguments)
-		if _, ok := isExecutable(args[0]); ok {
-			// fmt.Fprintf(out, "%s is %s\n", cmd, path)
+		if _, ok := isExecutable(parsedArgs[0]); ok {
 
 			// prepare the command to execute
-			command := exec.Command(args[0], args[1:]...)
-			// fmt.Printf("Command to execute: %+v", command)
+			command := exec.Command(parsedArgs[0], parsedArgs[1:]...)
+
 			command.Stderr = os.Stderr
 			command.Stdout = out
 
@@ -210,15 +204,3 @@ func printSliceWithIndexAndVal(s []string) {
 	}
 }
 
-/*
-parsedArgs = []string{}
-if quote then isQuote = !isQuote
-if isQuote
-  accum(c)
-  continue
-else
-  accum(c)
-  continue
-
-
-*/
