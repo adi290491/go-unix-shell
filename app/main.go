@@ -4,12 +4,10 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
-	"unicode"
 )
 
 // Ensures gofmt doesn't remove the "fmt" and "os" imports in stage 1 (feel free to remove this!)
@@ -47,7 +45,7 @@ func execCommand(command string) error {
 	command = strings.TrimSuffix(command, "\n")
 
 	// args := strings.Split(command, " ")
-	parsedArgs, redirectFileName := parseArgString(command)
+	parsedArgs, redirectFileName, redirectType := parseArgString(command)
 	var f *os.File
 	var err error
 	if redirectFileName != "" {
@@ -60,8 +58,14 @@ func execCommand(command string) error {
 	}
 
 	w := out
+	e := os.Stderr
 	if f != nil {
-		w = f
+		switch redirectType {
+		case RedirectStdout:
+			w = f
+		case RedirectStderr:
+			e = f
+		}
 	}
 
 	switch parsedArgs[0] {
@@ -88,12 +92,17 @@ func execCommand(command string) error {
 
 			cmd := parsedArgs[1]
 
-			if path, ok, _ := isExecutable(cmd); ok {
+			path, err := isExecutable(cmd)
+
+			if err == nil {
 				fmt.Fprintf(w, "%s is %s\n", cmd, path)
 				return nil
+			} else {
+				fmt.Fprintf(e, "%s: not found\n", parsedArgs[1])
 			}
 
-			return fmt.Errorf("%s: not found", parsedArgs[1])
+			// return fmt.Errorf("%s: not found", parsedArgs[1])
+
 		}
 
 	case "cat":
@@ -103,33 +112,19 @@ func execCommand(command string) error {
 		for _, fname := range parsedArgs[1:] {
 			fHandle, err := os.Open(fname)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "cat: %s: No such file or directory\n", fname)
+				fmt.Fprintf(e, "cat: %s: No such file or directory\n", fname)
 				continue
 			}
 
-			if f != nil {
-				io.Copy(f, fHandle)
-			} else {
-				io.Copy(out, fHandle)
-			}
+			// if f != nil {
+			// 	io.Copy(f, fHandle)
+			// } else {
+			// 	io.Copy(out, fHandle)
+			// }
 
-			// io.Copy(w, fHandle)
+			io.Copy(w, fHandle)
 			fHandle.Close()
 		}
-
-		// catCmd := exec.Command(parsedArgs[0], parsedArgs[1:]...)
-
-		// if f != nil {
-		// 	catCmd.Stdout = f
-		// } else {
-		// 	catCmd.Stdout = out
-		// }
-		// catCmd.Stderr = os.Stderr
-		// err := catCmd.Run()
-		// if err != nil {
-		// 	// fmt.Printf("Error: %v\n", err)
-		// 	return fmt.Errorf("cat: %s: No such file or directory\nError:%v\n", parsedArgs[1], err)
-		// }
 
 	case "pwd":
 		pwd, err := os.Getwd()
@@ -147,163 +142,48 @@ func execCommand(command string) error {
 		err := os.Chdir(parsedArgs[1])
 
 		if err != nil {
-			return fmt.Errorf("cd: %s: No such file or directory", parsedArgs[1])
+			fmt.Fprintf(e, "cd: %s: No such file or directory\n", parsedArgs[1])
 		}
 	default:
 
-		if _, ok, err := isExecutable(parsedArgs[0]); ok {
-			// fmt.Printf("Executing:%s\nRedirect Filename: %s", parsedArgs[0], redirectFileName)
-			// prepare the command to execute
+		_, err := isExecutable(parsedArgs[0])
+		var command *exec.Cmd
+		if err == nil {
+			// fmt.Printf("Executing: %s\n", parsedArgs[0])
 			// printSliceWithIndexAndVal(parsedArgs)
-			command := exec.Command(parsedArgs[0], parsedArgs[1:]...)
+			command = exec.Command(parsedArgs[0], parsedArgs[1:]...)
 
-			if f != nil {
+			if f != nil && redirectType == RedirectStdout {
 				command.Stdout = f
 			} else {
 				command.Stdout = os.Stdout
 			}
-			command.Stderr = os.Stderr
-			// command.Stdout = out
 
-			return command.Run()
-		} else if err != nil {
+			if f != nil && redirectType == RedirectStderr {
+				command.Stderr = f
+			} else {
+				command.Stderr = os.Stderr
+			}
+
+			err := command.Run()
+			if _, ok := err.(*exec.ExitError); ok {
+				return nil
+			} else {
+				return err
+			}
+		} else {
 			// fmt.Printf("Executing: %s\n", parsedArgs[0])
-			return fmt.Errorf("%s: command not found", command)
+			fmt.Fprintf(e, "%s: command not found\n", parsedArgs[0])
 		}
-		
+
 	}
 	return nil
 }
 
-func isExecutable(cmd string) (string, bool, error) {
+func isExecutable(cmd string) (string, error) {
 
-	path, err := exec.LookPath(cmd)
-	if err != nil {
-		return "", false, err
-	}
-	return path, true, nil
-}
+	return exec.LookPath(cmd)
 
-func parseArgString(args string) (parsedArgs []string, redirectFileName string) {
-	runes := []rune(args)
-	n := len(runes)
-
-	// var parsedArgs []string
-
-	isSingleQuote := false
-	isDoubleQuote := false
-	isRedirect := false
-	skipNextSpaces := false
-
-	var rd strings.Builder
-	var b strings.Builder
-
-	for i := 0; i < n; i++ {
-		r := runes[i]
-
-		if r == '"' && !isSingleQuote {
-			isDoubleQuote = !isDoubleQuote
-			continue
-		}
-
-		if r == '\'' && !isDoubleQuote {
-			isSingleQuote = !isSingleQuote
-			continue
-		}
-
-		if r == '\\' {
-
-			if i == n-1 {
-
-				if isRedirect {
-					rd.WriteRune('\\')
-				} else {
-					b.WriteRune('\\')
-				}
-				continue
-			}
-
-			next := runes[i+1]
-
-			if isSingleQuote {
-				b.WriteRune('\\')
-				continue
-			}
-
-			if isDoubleQuote {
-				// only certain escapes in double quotes
-				if next == '"' || next == '\\' || next == '$' || next == '`' {
-					b.WriteRune(next)
-					i++
-					continue
-				}
-				// backslash is literal otherwise
-				b.WriteRune('\\')
-				continue
-			}
-
-			if isRedirect {
-				rd.WriteRune(next)
-			} else {
-				b.WriteRune(next)
-			}
-			i++
-			continue
-		}
-
-		if !isSingleQuote && !isDoubleQuote {
-			if r == '>' || (unicode.IsDigit(r) && i+1 < n && runes[i+1] == '>') {
-				if b.Len() > 0 {
-					parsedArgs = append(parsedArgs, b.String())
-					b.Reset()
-				}
-				isRedirect = true
-				skipNextSpaces = true
-				if unicode.IsDigit(r) {
-					i++
-				}
-				continue
-			}
-
-		}
-
-		// consider everything after redirect as redirect file name
-		if isRedirect {
-			if skipNextSpaces && r == ' ' {
-				continue
-			}
-			skipNextSpaces = false
-			if r == ' ' && !isSingleQuote && !isDoubleQuote {
-				isRedirect = false
-				continue
-			}
-
-			rd.WriteRune(r)
-			continue
-		}
-
-		if r == ' ' && !isSingleQuote && !isDoubleQuote {
-			if b.Len() > 0 {
-				parsedArgs = append(parsedArgs, b.String())
-				b.Reset()
-			}
-			continue
-		}
-		b.WriteRune(r)
-	}
-
-	if b.Len() > 0 {
-		parsedArgs = append(parsedArgs, b.String())
-	}
-
-	redirectFileName = strings.TrimSpace(rd.String())
-	return parsedArgs, redirectFileName
-}
-
-func printSliceWithIndexAndVal(s []string) {
-	for i, v := range s {
-		log.Println(i, v)
-	}
 }
 
 func createFile(fileName string) (*os.File, error) {
