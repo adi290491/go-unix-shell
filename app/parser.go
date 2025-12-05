@@ -99,41 +99,6 @@ func parseArgString(args string) (parsedArgs []string, redirectFileName string, 
 				continue
 			}
 
-			// if (r == '1' || r == '2') && i+1 < n && runes[i+1] == '>' {
-			// 	if b.Len() > 0 {
-			// 		parsedArgs = append(parsedArgs, b.String())
-			// 		b.Reset()
-			// 	}
-
-			// 	if r == '1' {
-			// 		redirectType = RedirectStdout
-			// 	} else {
-			// 		redirectType = RedirectStderr
-			// 	}
-
-			// 	isRedirect = true
-			// 	skipNextSpaces = true
-			// 	i++
-			// 	continue
-			// }
-
-			// if r == '>' {
-			// 	if b.Len() > 0 {
-			// 		parsedArgs = append(parsedArgs, b.String())
-			// 		b.Reset()
-			// 	}
-
-			// 	redirectType = RedirectStdout
-			// 	isRedirect = true
-			// 	skipNextSpaces = true
-			// 	if i+1 < n && runes[i+1] == '>' {
-			// 		redirectType = RedirectAppend
-			// 		i++
-			// 	}
-
-			// 	continue
-			// }
-
 		}
 
 		// consider everything after redirect as redirect file name

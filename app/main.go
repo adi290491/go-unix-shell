@@ -62,13 +62,10 @@ func execCommand(command string) error {
 	e := os.Stderr
 	if f != nil {
 		switch redirectType {
-		case RedirectStdout:
-			// fmt.Println("RedirectStdout:", redirectType)
-			w = f
-		case RedirectAppend:
+		case RedirectStdout, RedirectAppend:
 			// fmt.Println("RedirectAppend:", redirectType)
 			w = f
-		case RedirectStderr:
+		case RedirectStderr, RedirectStderrAppend:
 			// fmt.Println("RedirectStderr:", redirectType)
 			e = f
 		}
@@ -165,7 +162,7 @@ func execCommand(command string) error {
 				command.Stdout = os.Stdout
 			}
 
-			if f != nil && redirectType == RedirectStderr {
+			if f != nil && redirectType == RedirectStderr || redirectType == RedirectStderrAppend {
 				command.Stderr = f
 			} else {
 				command.Stderr = os.Stderr
@@ -199,7 +196,7 @@ func createFile(fileName string, redirectType RedirectType) (*os.File, error) {
 	case RedirectStdout, RedirectStderr:
 		// '>' and '1>' and "2>"
 		flag = os.O_CREATE | os.O_WRONLY | os.O_TRUNC
-	case RedirectAppend:
+	case RedirectAppend, RedirectStderrAppend:
 		flag = os.O_CREATE | os.O_WRONLY | os.O_APPEND
 	default:
 		return nil, fmt.Errorf("invalid redirect type")
