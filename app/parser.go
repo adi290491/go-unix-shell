@@ -8,13 +8,14 @@ import (
 type RedirectType int
 
 const (
-	RedirectNone   RedirectType = iota
-	RedirectStdout              // > or 1>
-	RedirectStderr              // 2>
+	RedirectNone         RedirectType = iota
+	RedirectStdout                    // > or 1>
+	RedirectStderr                    // 2>
+	RedirectAppend                    // >>, 1>>
+	RedirectStderrAppend              // 2>>
 )
 
 var redirectType RedirectType
-var redirectFile string
 
 func parseArgString(args string) (parsedArgs []string, redirectFileName string, redirectType RedirectType) {
 	runes := []rune(args)
@@ -84,35 +85,54 @@ func parseArgString(args string) (parsedArgs []string, redirectFileName string, 
 		}
 
 		if !isSingleQuote && !isDoubleQuote {
-			if r == '>' {
+
+			rt, consumed := detectRedirect(runes, i)
+			if rt != RedirectNone {
 				if b.Len() > 0 {
 					parsedArgs = append(parsedArgs, b.String())
 					b.Reset()
 				}
-				redirectType = RedirectStdout
+				redirectType = rt
 				isRedirect = true
 				skipNextSpaces = true
-
+				i += consumed - 1
 				continue
 			}
 
-			if (r == '1' || r == '2') && i+1 < n && runes[i+1] == '>' {
-				if b.Len() > 0 {
-					parsedArgs = append(parsedArgs, b.String())
-					b.Reset()
-				}
+			// if (r == '1' || r == '2') && i+1 < n && runes[i+1] == '>' {
+			// 	if b.Len() > 0 {
+			// 		parsedArgs = append(parsedArgs, b.String())
+			// 		b.Reset()
+			// 	}
 
-				if r == '1' {
-					redirectType = RedirectStdout
-				} else {
-					redirectType = RedirectStderr
-				}
+			// 	if r == '1' {
+			// 		redirectType = RedirectStdout
+			// 	} else {
+			// 		redirectType = RedirectStderr
+			// 	}
 
-				isRedirect = true
-				skipNextSpaces = true
-				i++
-				continue
-			}
+			// 	isRedirect = true
+			// 	skipNextSpaces = true
+			// 	i++
+			// 	continue
+			// }
+
+			// if r == '>' {
+			// 	if b.Len() > 0 {
+			// 		parsedArgs = append(parsedArgs, b.String())
+			// 		b.Reset()
+			// 	}
+
+			// 	redirectType = RedirectStdout
+			// 	isRedirect = true
+			// 	skipNextSpaces = true
+			// 	if i+1 < n && runes[i+1] == '>' {
+			// 		redirectType = RedirectAppend
+			// 		i++
+			// 	}
+
+			// 	continue
+			// }
 
 		}
 
@@ -147,6 +167,43 @@ func parseArgString(args string) (parsedArgs []string, redirectFileName string, 
 
 	redirectFileName = strings.TrimSpace(rd.String())
 	return parsedArgs, redirectFileName, redirectType
+}
+
+func detectRedirect(runes []rune, i int) (RedirectType, int) {
+	n := len(runes)
+
+	// first check case 1: 1>> 2>>
+	if i+2 < n {
+		op := string(runes[i : i+3])
+		if op == "1>>" {
+			return RedirectAppend, 3
+		}
+		if op == "2>>" {
+			return RedirectStderrAppend, 3
+		}
+	}
+
+	// Case 2: Simple append >>
+	if i+1 < n && string(runes[i:i+2]) == ">>" {
+		return RedirectAppend, 2
+	}
+
+	// Case 3: Simple redirect: 1>, 2>
+	if i+1 < n && (runes[i] == '1' || runes[i] == '2') && runes[i+1] == '>' {
+		op := string(runes[i : i+2])
+		if op == "1>" {
+			return RedirectStdout, 2
+		}
+		if op == "2>" {
+			return RedirectStderr, 2
+		}
+	}
+
+	// case 4: stdout truncate >
+	if runes[i] == '>' {
+		return RedirectStdout, 1
+	}
+	return RedirectNone, 0
 }
 
 func printSliceWithIndexAndVal(s []string) {

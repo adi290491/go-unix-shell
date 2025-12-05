@@ -46,10 +46,11 @@ func execCommand(command string) error {
 
 	// args := strings.Split(command, " ")
 	parsedArgs, redirectFileName, redirectType := parseArgString(command)
+
 	var f *os.File
 	var err error
 	if redirectFileName != "" {
-		f, err = createFile(redirectFileName)
+		f, err = createFile(redirectFileName, redirectType)
 		// fmt.Println("Redirect Filename:", redirectFileName)
 		if err != nil {
 			return err
@@ -62,8 +63,13 @@ func execCommand(command string) error {
 	if f != nil {
 		switch redirectType {
 		case RedirectStdout:
+			// fmt.Println("RedirectStdout:", redirectType)
+			w = f
+		case RedirectAppend:
+			// fmt.Println("RedirectAppend:", redirectType)
 			w = f
 		case RedirectStderr:
+			// fmt.Println("RedirectStderr:", redirectType)
 			e = f
 		}
 	}
@@ -153,7 +159,7 @@ func execCommand(command string) error {
 			// printSliceWithIndexAndVal(parsedArgs)
 			command = exec.Command(parsedArgs[0], parsedArgs[1:]...)
 
-			if f != nil && redirectType == RedirectStdout {
+			if f != nil && redirectType == RedirectStdout || redirectType == RedirectAppend {
 				command.Stdout = f
 			} else {
 				command.Stdout = os.Stdout
@@ -186,8 +192,20 @@ func isExecutable(cmd string) (string, error) {
 
 }
 
-func createFile(fileName string) (*os.File, error) {
-	file, err := os.Create(fileName)
+func createFile(fileName string, redirectType RedirectType) (*os.File, error) {
+	var flag int
+
+	switch redirectType {
+	case RedirectStdout, RedirectStderr:
+		// '>' and '1>' and "2>"
+		flag = os.O_CREATE | os.O_WRONLY | os.O_TRUNC
+	case RedirectAppend:
+		flag = os.O_CREATE | os.O_WRONLY | os.O_APPEND
+	default:
+		return nil, fmt.Errorf("invalid redirect type")
+	}
+
+	file, err := os.OpenFile(fileName, flag, 0644)
 	if err != nil {
 		return nil, err
 	}
