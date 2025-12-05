@@ -18,6 +18,7 @@ const (
 var redirectType RedirectType
 
 func parseArgString(args string) (parsedArgs []string, redirectFileName string, redirectType RedirectType) {
+	
 	runes := []rune(args)
 	n := len(runes)
 

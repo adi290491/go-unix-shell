@@ -43,15 +43,12 @@ func main() {
 
 func execCommand(command string) error {
 	command = strings.TrimSuffix(command, "\n")
-
-	// args := strings.Split(command, " ")
 	parsedArgs, redirectFileName, redirectType := parseArgString(command)
 
 	var f *os.File
 	var err error
 	if redirectFileName != "" {
 		f, err = createFile(redirectFileName, redirectType)
-		// fmt.Println("Redirect Filename:", redirectFileName)
 		if err != nil {
 			return err
 		}
@@ -63,12 +60,14 @@ func execCommand(command string) error {
 	if f != nil {
 		switch redirectType {
 		case RedirectStdout, RedirectAppend:
-			// fmt.Println("RedirectAppend:", redirectType)
 			w = f
 		case RedirectStderr, RedirectStderrAppend:
-			// fmt.Println("RedirectStderr:", redirectType)
 			e = f
 		}
+	}
+
+	if len(parsedArgs) == 0 {
+		return nil
 	}
 
 	switch parsedArgs[0] {
@@ -83,19 +82,23 @@ func execCommand(command string) error {
 		os.Exit(code)
 
 	case "echo":
-		// printSliceWithIndexAndVal(parsedArgs)
 		outputStrings := strings.Join(parsedArgs[1:], " ")
 
 		fmt.Fprintln(w, outputStrings)
 
 	case "type":
+		if len(parsedArgs) < 2 {
+			fmt.Fprintln(e, "type: missing operand")
+			return nil
+		}
+
 		if ok := commandSets[parsedArgs[1]]; ok {
 			fmt.Fprintf(w, "%s is a shell builtin\n", parsedArgs[1])
 		} else {
 
 			cmd := parsedArgs[1]
 
-			path, err := isExecutable(cmd)
+			path, err := exec.LookPath(cmd)
 
 			if err == nil {
 				fmt.Fprintf(w, "%s is %s\n", cmd, path)
@@ -104,13 +107,9 @@ func execCommand(command string) error {
 				fmt.Fprintf(e, "%s: not found\n", parsedArgs[1])
 			}
 
-			// return fmt.Errorf("%s: not found", parsedArgs[1])
-
 		}
 
 	case "cat":
-		// printSliceWithIndexAndVal(parsedArgs)
-		// fmt.Println("Redirect Filename:", redirectFileName)
 
 		for _, fname := range parsedArgs[1:] {
 			fHandle, err := os.Open(fname)
@@ -118,12 +117,6 @@ func execCommand(command string) error {
 				fmt.Fprintf(e, "cat: %s: No such file or directory\n", fname)
 				continue
 			}
-
-			// if f != nil {
-			// 	io.Copy(f, fHandle)
-			// } else {
-			// 	io.Copy(out, fHandle)
-			// }
 
 			io.Copy(w, fHandle)
 			fHandle.Close()
@@ -138,6 +131,11 @@ func execCommand(command string) error {
 
 	case "cd":
 
+		if len(parsedArgs) == 1 {
+			os.Chdir(os.Getenv("HOME"))
+			return nil
+		}
+
 		if parsedArgs[1] == "~" {
 			parsedArgs[1] = os.Getenv("HOME")
 		}
@@ -149,20 +147,19 @@ func execCommand(command string) error {
 		}
 	default:
 
-		_, err := isExecutable(parsedArgs[0])
+		_, err := exec.LookPath(parsedArgs[0])
 		var command *exec.Cmd
 		if err == nil {
-			// fmt.Printf("Executing: %s\n", parsedArgs[0])
-			// printSliceWithIndexAndVal(parsedArgs)
+
 			command = exec.Command(parsedArgs[0], parsedArgs[1:]...)
 
-			if f != nil && redirectType == RedirectStdout || redirectType == RedirectAppend {
+			if f != nil && (redirectType == RedirectStdout || redirectType == RedirectAppend) {
 				command.Stdout = f
 			} else {
 				command.Stdout = os.Stdout
 			}
 
-			if f != nil && redirectType == RedirectStderr || redirectType == RedirectStderrAppend {
+			if f != nil && (redirectType == RedirectStderr || redirectType == RedirectStderrAppend) {
 				command.Stderr = f
 			} else {
 				command.Stderr = os.Stderr
@@ -181,12 +178,6 @@ func execCommand(command string) error {
 
 	}
 	return nil
-}
-
-func isExecutable(cmd string) (string, error) {
-
-	return exec.LookPath(cmd)
-
 }
 
 func createFile(fileName string, redirectType RedirectType) (*os.File, error) {
