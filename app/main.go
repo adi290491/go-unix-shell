@@ -25,20 +25,18 @@ var commandSets = map[string]bool{
 
 func main() {
 	// TODO: Uncomment the code below to pass the first stage
+
+	rl, err := InitReadline()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	defer rl.Close()
+
 	for {
-		// fmt.Fprint(os.Stdout, "$ ")
-		// reader := bufio.NewReader(os.Stdin)
-
-		// command, err := reader.ReadString('\n')
-
-		rl, err := InitReadline()
-
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
-		}
 
 		command, err := rl.Readline()
+
 		if err == readline.ErrInterrupt {
 			continue
 		}
