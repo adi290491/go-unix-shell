@@ -1,13 +1,14 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
+
+	"github.com/chzyer/readline"
 )
 
 // Ensures gofmt doesn't remove the "fmt" and "os" imports in stage 1 (feel free to remove this!)
@@ -25,15 +26,27 @@ var commandSets = map[string]bool{
 func main() {
 	// TODO: Uncomment the code below to pass the first stage
 	for {
-		fmt.Fprint(os.Stdout, "$ ")
-		reader := bufio.NewReader(os.Stdin)
+		// fmt.Fprint(os.Stdout, "$ ")
+		// reader := bufio.NewReader(os.Stdin)
 
-		command, err := reader.ReadString('\n')
+		// command, err := reader.ReadString('\n')
+
+		rl, err := InitReadline()
 
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
+
+		command, err := rl.Readline()
+		if err == readline.ErrInterrupt {
+			continue
+		}
+
+		if err == io.EOF {
+			break
+		}
+
 		// command = `"exe with \'single quotes\'" /tmp/cow/f3`
 		if err = execCommand(command); err != nil {
 			fmt.Fprintln(os.Stderr, err)
