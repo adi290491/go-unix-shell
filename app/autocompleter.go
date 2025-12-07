@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"sort"
 	"strings"
 
 	"github.com/chzyer/readline"
@@ -66,6 +68,33 @@ func getCurrentWord(line []rune, pos int) (string, int) {
 
 func collectCommands() []string {
 	builtins := []string{"echo", "exit", "cd", "cat", "pwd", "type"}
+	path := os.Getenv("PATH")
+	dirs := strings.Split(path, ":")
 
-	return builtins
+	m := map[string]bool{}
+
+	for _, b := range builtins {
+		m[b] = true
+	}
+
+	// external commands
+	for _, dir := range dirs {
+		files, _ := os.ReadDir(dir)
+		for _, f := range files {
+			if !f.IsDir() {
+				m[f.Name()] = true
+			}
+		}
+	}
+
+	// convert map to output slice
+	var output []string
+
+	for c := range m {
+		output = append(output, c)
+	}
+
+	sort.Strings(output)
+
+	return output
 }
