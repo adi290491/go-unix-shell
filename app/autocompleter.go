@@ -13,7 +13,7 @@ func InitReadline() (*readline.Instance, error) {
 	return readline.NewEx(&readline.Config{
 		Prompt: prompt,
 		AutoComplete: &ShellCompleter{
-			commands: collectCommands(),
+			Commands: collectCommands(),
 		},
 	})
 }
@@ -27,34 +27,89 @@ var (
 	prompt = "$ "
 )
 
+const (
+	executable = iota
+	builtin
+)
+
+// func tabInterceptor(r rune) (rune, bool) {
+// 	if r != '\t' {
+// 		wasLastTab = false
+// 		return r, true
+// 	}
+
+// 	if !wasLastTab {
+// 		wasLastTab = true
+// 		pressRingBell()
+// 		return 0, false
+// 	}
+
+// 	wasLastTab = false
+// 	handleDoubleTab()
+// 	return 0, false
+// }
+
+// func handleDoubleTab() {
+
+// }
+
 type ShellCompleter struct {
-	commands []string
+	Commands
+	lastLine      string
+	tabPressCount int
+	lastPos       int
+}
+
+type Commands struct {
+	Builtins    []string
+	Executables []string
 }
 
 func (c *ShellCompleter) Do(line []rune, pos int) ([][]rune, int) {
+
+	currLine := string(line[:pos])
+
+	if c.lastLine == currLine && pos == c.lastPos {
+		c.tabPressCount++
+	} else {
+		c.tabPressCount = 1
+		c.lastLine = currLine
+		c.lastPos = pos
+	}
+
 	word, _ := getCurrentWord(line, pos)
 
-	matches := []string{}
-
-	for _, cmd := range c.commands {
-		if strings.HasPrefix(cmd, word) {
-			matches = append(matches, cmd)
-		}
-	}
+	matches := c.getAllMatches(word)
 
 	if len(matches) == 0 {
 		fmt.Print("\x07")
+		c.tabPressCount = 0
 		return nil, 0
 	}
 
-	out := make([][]rune, len(matches))
-	for i, m := range matches {
-		suffix := m[len(word):] + " "
-		out[i] = []rune(suffix)
+	if len(matches) == 1 {
+		suffix := matches[0][len(word):] + " "
+		c.tabPressCount = 0
+		return [][]rune{[]rune(suffix)}, 0
 	}
 
-	// replace := -(pos - start)
-	return out, 0
+	if c.tabPressCount == 1 {
+		fmt.Print("\x07")
+		return nil, 0
+	} else if c.tabPressCount >= 2 {
+		sort.Strings(matches)
+		// out := make([][]rune, len(matches))
+		// for i, m := range matches {
+		// 	suffix := m + " "
+		// 	out[i] = []rune(suffix)
+		// }
+		fmt.Fprintf(os.Stderr, "\n%s\n", strings.Join(matches, "  "))
+		c.tabPressCount = 0
+		// return out, 0
+		return [][]rune{[]rune("")}, -1
+	}
+
+	return nil, 0
 
 }
 
@@ -66,35 +121,82 @@ func getCurrentWord(line []rune, pos int) (string, int) {
 	return string(line[i+1 : pos]), i + 1
 }
 
-func collectCommands() []string {
+func collectCommands() Commands {
 	builtins := []string{"echo", "exit", "cd", "cat", "pwd", "type"}
+
+	builtinSet := map[string]bool{}
+
+	for _, b := range builtins {
+		builtinSet[b] = true
+	}
+
 	path := os.Getenv("PATH")
 	dirs := strings.Split(path, ":")
 
-	m := map[string]bool{}
-
-	for _, b := range builtins {
-		m[b] = true
-	}
+	execSet := map[string]bool{}
 
 	// external commands
 	for _, dir := range dirs {
 		files, _ := os.ReadDir(dir)
 		for _, f := range files {
 			if !f.IsDir() {
-				m[f.Name()] = true
+				execSet[f.Name()] = true
 			}
 		}
 	}
 
-	// convert map to output slice
-	var output []string
-
-	for c := range m {
-		output = append(output, c)
+	exec := []string{}
+	for e := range execSet {
+		if !builtinSet[e] {
+			exec = append(exec, e)
+		}
 	}
 
-	sort.Strings(output)
+	sort.Strings(builtins)
+	sort.Strings(exec)
 
-	return output
+	return Commands{
+		Builtins:    builtins,
+		Executables: exec,
+	}
+}
+
+func (c *ShellCompleter) getAllMatches(word string) []string {
+	matches := make([]string, 0)
+
+	builtins := c.getBuiltinMatches(word)
+	matches = append(matches, builtins...)
+
+	executables := c.getExecutableMatches(word)
+	matches = append(matches, executables...)
+
+	return matches
+}
+
+func (c *ShellCompleter) getBuiltinMatches(word string) []string {
+	matches := make([]string, 0)
+
+	for _, cmd := range c.Builtins {
+		if strings.HasPrefix(cmd, word) {
+			matches = append(matches, cmd)
+
+		}
+	}
+
+	return matches
+}
+
+func (c *ShellCompleter) getExecutableMatches(word string) []string {
+	matches := make([]string, 0)
+
+	for _, e := range c.Executables {
+		if strings.HasPrefix(e, word) {
+			matches = append(matches, e)
+		}
+	}
+	return matches
+}
+
+func pressRingBell() {
+	fmt.Print("\x07")
 }
