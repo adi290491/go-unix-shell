@@ -93,6 +93,14 @@ func (c *ShellCompleter) Do(line []rune, pos int) ([][]rune, int) {
 		return [][]rune{[]rune(suffix)}, 0
 	}
 
+	lcp := findLongestCommonPrefix(matches)
+	// fmt.Fprintf(os.Stdout, "LCP: %s\n", lcp)
+
+	if lcp != "" && len(lcp) > len(word) {
+		suffix := lcp[len(word):]
+		return [][]rune{[]rune(suffix)}, 0
+	}
+
 	if c.tabPressCount == 1 {
 		fmt.Print("\x07")
 		return nil, 0
@@ -199,4 +207,26 @@ func (c *ShellCompleter) getExecutableMatches(word string) []string {
 
 func pressRingBell() {
 	fmt.Print("\x07")
+}
+
+func findLongestCommonPrefix(matches []string) string {
+	if len(matches) == 0 {
+		return ""
+	}
+
+	longestCommonPrefix := matches[0]
+
+	for _, match := range matches[1:] {
+		for i := 0; i < min(len(longestCommonPrefix), len(match)); i++ {
+			if longestCommonPrefix[i] != match[i] {
+				longestCommonPrefix = longestCommonPrefix[:i]
+				break
+			}
+		}
+		if len(longestCommonPrefix) == 0 {
+			break
+		}
+
+	}
+	return longestCommonPrefix
 }
