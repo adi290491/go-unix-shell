@@ -98,6 +98,7 @@ func (c *ShellCompleter) Do(line []rune, pos int) ([][]rune, int) {
 
 	if lcp != "" && len(lcp) > len(word) {
 		suffix := lcp[len(word):]
+		c.tabPressCount = 0
 		return [][]rune{[]rune(suffix)}, 0
 	}
 
@@ -106,11 +107,7 @@ func (c *ShellCompleter) Do(line []rune, pos int) ([][]rune, int) {
 		return nil, 0
 	} else if c.tabPressCount >= 2 {
 		sort.Strings(matches)
-		// out := make([][]rune, len(matches))
-		// for i, m := range matches {
-		// 	suffix := m + " "
-		// 	out[i] = []rune(suffix)
-		// }
+
 		fmt.Fprintf(os.Stderr, "\n%s\n", strings.Join(matches, "  "))
 		c.tabPressCount = 0
 		// return out, 0
