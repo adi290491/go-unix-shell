@@ -214,16 +214,12 @@ func findLongestCommonPrefix(matches []string) string {
 	longestCommonPrefix := matches[0]
 
 	for _, match := range matches[1:] {
-		for i := 0; i < min(len(longestCommonPrefix), len(match)); i++ {
-			if longestCommonPrefix[i] != match[i] {
-				longestCommonPrefix = longestCommonPrefix[:i]
-				break
+		for !strings.HasPrefix(match, longestCommonPrefix) {
+			if len(longestCommonPrefix) == 0 {
+				return ""
 			}
+			longestCommonPrefix = longestCommonPrefix[:len(longestCommonPrefix)-1]
 		}
-		if len(longestCommonPrefix) == 0 {
-			break
-		}
-
 	}
 	return longestCommonPrefix
 }
