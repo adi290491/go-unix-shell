@@ -201,25 +201,3 @@ func (c *ShellCompleter) getExecutableMatches(word string) []string {
 	}
 	return matches
 }
-
-func pressRingBell() {
-	fmt.Print("\x07")
-}
-
-func findLongestCommonPrefix(matches []string) string {
-	if len(matches) == 0 {
-		return ""
-	}
-
-	longestCommonPrefix := matches[0]
-
-	for _, match := range matches[1:] {
-		for !strings.HasPrefix(match, longestCommonPrefix) {
-			if len(longestCommonPrefix) == 0 {
-				return ""
-			}
-			longestCommonPrefix = longestCommonPrefix[:len(longestCommonPrefix)-1]
-		}
-	}
-	return longestCommonPrefix
-}
