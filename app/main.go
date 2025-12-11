@@ -53,6 +53,80 @@ func main() {
 }
 
 func execCommand(command string) error {
+	command = strings.TrimSpace(command)
+
+	if command == "" {
+		return nil
+	}
+
+	if strings.Contains(command, "|") {
+		return execPipeline(command)
+	}
+
+	return execSingleCommand(command)
+}
+
+func execPipeline(command string) error {
+	parts := strings.Split(command, "|")
+	if len(parts) != 2 {
+		return fmt.Errorf("only two-command pipelines are supported")
+	}
+
+	leftCmd := strings.TrimSpace(parts[0])
+	rightCmd := strings.TrimSpace(parts[1])
+
+	leftArgs := strings.Fields(leftCmd)
+	rightArgs := strings.Fields(rightCmd)
+
+	if len(leftArgs) == 0 || len(rightArgs) == 0 {
+		return fmt.Errorf("empty command in pipeline")
+	}
+
+	reader, writer, err := os.Pipe()
+	if err != nil {
+		return fmt.Errorf("failed to create pipe: %w", err)
+	}
+
+	// setup left cmd
+	leftExec := exec.Command(leftArgs[0], leftArgs[1:]...)
+	leftExec.Stdin = os.Stdin
+	leftExec.Stdout = writer
+	leftExec.Stderr = os.Stderr
+
+	// setup right cmd
+	rightExec := exec.Command(rightArgs[0], rightArgs[1:]...)
+	rightExec.Stdin = reader
+	rightExec.Stdout = os.Stdout
+	rightExec.Stderr = os.Stderr
+
+	// start left command
+	if err := leftExec.Start(); err != nil {
+		writer.Close()
+		reader.Close()
+		return fmt.Errorf("failed to start %s: %w", leftArgs[0], err)
+	}
+
+	// start right command
+	if err := rightExec.Start(); err != nil {
+		writer.Close()
+		reader.Close()
+		return fmt.Errorf("failed to start %s: %w", rightArgs[0], err)
+	}
+
+	// Close write end in parent
+	writer.Close()
+
+	// wait for left command to finish
+	leftExec.Wait()
+
+	// close read end
+	reader.Close()
+
+	//wait for right command to finish
+	return rightExec.Wait()
+}
+
+func execSingleCommand(command string) error {
 	command = strings.TrimSuffix(command, "\n")
 	parsedArgs, redirectFileName, redirectType := parseArgString(command)
 
@@ -189,25 +263,4 @@ func execCommand(command string) error {
 
 	}
 	return nil
-}
-
-func createFile(fileName string, redirectType RedirectType) (*os.File, error) {
-	var flag int
-
-	switch redirectType {
-	case RedirectStdout, RedirectStderr:
-		// '>' and '1>' and "2>"
-		flag = os.O_CREATE | os.O_WRONLY | os.O_TRUNC
-	case RedirectAppend, RedirectStderrAppend:
-		flag = os.O_CREATE | os.O_WRONLY | os.O_APPEND
-	default:
-		return nil, fmt.Errorf("invalid redirect type")
-	}
-
-	file, err := os.OpenFile(fileName, flag, 0644)
-	if err != nil {
-		return nil, err
-	}
-
-	return file, nil
 }
