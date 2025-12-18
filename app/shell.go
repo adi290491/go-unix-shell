@@ -18,7 +18,6 @@ var builtinCmds = map[string]bool{
 }
 
 func execCommand(command string) error {
-	// command = `ls /tmp/dog | tail -n 5 | head -n 3 | grep "f-47"`
 	command = strings.TrimSpace(command)
 
 	if command == "" {
@@ -26,18 +25,16 @@ func execCommand(command string) error {
 	}
 
 	if strings.Contains(command, "|") {
-		// fmt.Fprintf(os.Stderr, "[PIPELINE]: %s\n", command)
+
 		return execPipeline(command)
 	}
-	// fmt.Fprintf(os.Stderr, "[SINGLE COMMAND]: %s\n", command)
+
 	return execSingleCommand(command, os.Stdin, os.Stdout, os.Stderr)
 }
 
 func execPipeline(command string) error {
 
-	// if strings.Contains(command, "grep") {
-	// 	dump(command)
-	// }
+
 	commandParts := strings.Split(command, "|")
 
 	type Pipe struct {
@@ -71,8 +68,6 @@ func execPipeline(command string) error {
 	if len(commands) == 0 {
 		return nil
 	}
-
-	// dump(fmt.Sprintf("Inside Pipeline %d commands: %+v\n", len(commandParts), commands))
 
 	numPipes := len(commands) - 1
 	pipes := make([]Pipe, numPipes)
@@ -131,10 +126,8 @@ func execPipeline(command string) error {
 			}(cmd, errChan, isLastCmd)
 
 		} else {
-			// fmt.Fprintf(os.Stderr, "Executing: %s\targs:%v\n", cmd.cmd, cmd.args)
 
 			if _, err := exec.LookPath(cmd.args[0]); err == nil {
-				// fmt.Fprintf(os.Stderr, "[DEBUG] PATH: %s\n", path)
 				execCmd := exec.Command(cmd.args[0], cmd.args[1:]...)
 
 				if i == 0 {
@@ -150,19 +143,9 @@ func execPipeline(command string) error {
 				}
 				execCmd.Stderr = cmd.stderr
 
-				// if err := execCmd.Start(); err != nil {
-				// 	// fmt.Fprintf(os.Stderr, "Failed to start %s: %v\n", cmd.args[0], err)
-				// 	return fmt.Errorf("failed to start %s: %w", cmd.args[0], err)
-				// }
-
-				// if !isLastCmd {
-				// 	if closer, ok := cmd.stdout.(io.Closer); ok {
-				// 		closer.Close()
-				// 	}
-				// }
+			
 				externalCmds[i] = execCmd
 			} else {
-				// fmt.Printf("Executing: %s\n", parsedArgs[0])
 				fmt.Fprintf(os.Stderr, "%s: command not found\n", cmd.args[0])
 			}
 		}
@@ -173,8 +156,7 @@ func execPipeline(command string) error {
 		if cmd == nil {
 			continue
 		}
-		// fmt.Fprintf(os.Stderr, "Failed to start %s: %v\n", cmd.args[0], err)
-		// return fmt.Errorf("failed to start %s: %w", cmd.args[0], err)
+
 		cmd.Start()
 	}
 
@@ -359,124 +341,3 @@ func execSingleCommand(command string, stdin io.Reader, stdout, stderr io.Writer
 	return nil
 }
 
-/*
-	leftCmd := strings.TrimSpace(parts[0])
-	rightCmd := strings.TrimSpace(parts[1])
-
-	leftArgs := strings.Fields(leftCmd)
-	rightArgs := strings.Fields(rightCmd)
-
-	if len(leftArgs) == 0 || len(rightArgs) == 0 {
-		return fmt.Errorf("empty command in pipeline")
-	}
-
-	reader, writer, err := os.Pipe()
-	if err != nil {
-		return fmt.Errorf("failed to create pipe: %w", err)
-	}
-
-	// check if command is a builtin
-	leftIsBuiltin := builtinCmds[leftArgs[0]]
-	rightIsBuiltin := builtinCmds[rightArgs[0]]
-
-	switch {
-	case leftIsBuiltin && rightIsBuiltin:
-
-		errChan := make(chan error, 1)
-		go func() {
-			err := execSingleCommand(leftCmd, os.Stdin, writer, os.Stderr)
-			writer.Close()
-			errChan <- err
-		}()
-
-		err := execSingleCommand(rightCmd, reader, os.Stdout, os.Stderr)
-		reader.Close()
-
-		if leftErr := <-errChan; leftErr != nil {
-			return leftErr
-		}
-		return err
-
-	case leftIsBuiltin && !rightIsBuiltin:
-
-		if err := execSingleCommand(leftCmd, os.Stdin, writer, os.Stderr); err != nil {
-			writer.Close()
-			reader.Close()
-			return err
-		}
-
-		writer.Close()
-
-		rightExec := exec.Command(rightArgs[0], rightArgs[1:]...)
-		rightExec.Stdin = reader
-		rightExec.Stdout = os.Stdout
-		rightExec.Stderr = os.Stderr
-
-		err := rightExec.Run()
-		reader.Close()
-		return err
-
-	case !leftIsBuiltin && rightIsBuiltin:
-
-		leftExec := exec.Command(leftArgs[0], leftArgs[1:]...)
-		leftExec.Stdin = os.Stdin
-		leftExec.Stdout = writer
-		leftExec.Stderr = os.Stderr
-
-		if err := leftExec.Start(); err != nil {
-			writer.Close()
-			reader.Close()
-			return fmt.Errorf("failed to start %s: %w", leftArgs[0], err)
-		}
-		writer.Close()
-
-		if err := execSingleCommand(rightCmd, reader, os.Stdout, os.Stderr); err != nil {
-			reader.Close()
-			leftExec.Wait()
-			return err
-		}
-
-		reader.Close()
-
-		return leftExec.Wait()
-
-	default:
-		// setup left cmd
-		leftExec := exec.Command(leftArgs[0], leftArgs[1:]...)
-		leftExec.Stdin = os.Stdin
-		leftExec.Stdout = writer
-		leftExec.Stderr = os.Stderr
-
-		// setup right cmd
-		rightExec := exec.Command(rightArgs[0], rightArgs[1:]...)
-		rightExec.Stdin = reader
-		rightExec.Stdout = os.Stdout
-		rightExec.Stderr = os.Stderr
-
-		// start left command
-		if err := leftExec.Start(); err != nil {
-			writer.Close()
-			reader.Close()
-			return fmt.Errorf("failed to start %s: %w", leftArgs[0], err)
-		}
-
-		// start right command
-		if err := rightExec.Start(); err != nil {
-			writer.Close()
-			reader.Close()
-			return fmt.Errorf("failed to start %s: %w", rightArgs[0], err)
-		}
-
-		// Close write end in parent
-		writer.Close()
-
-		// wait for left command to finish
-		leftExec.Wait()
-
-		// close read end
-		reader.Close()
-
-		//wait for right command to finish
-		return rightExec.Wait()
-	}
-*/
