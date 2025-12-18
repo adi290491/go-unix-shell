@@ -10,12 +10,13 @@ import (
 )
 
 func InitReadline() (*readline.Instance, error) {
+	os.Remove(historyFilePath)
 	return readline.NewEx(&readline.Config{
 		Prompt: prompt,
 		AutoComplete: &ShellCompleter{
 			Commands: collectCommands(),
 		},
-		HistoryFile:       "/tmp/readline.tmp",
+		HistoryFile:       historyFilePath,
 		HistorySearchFold: true,
 	})
 }
@@ -26,7 +27,8 @@ var (
 		readline.PcItem("exit"),
 	)
 
-	prompt = "$ "
+	prompt          = "$ "
+	historyFilePath = "/tmp/readline.tmp"
 )
 
 const (

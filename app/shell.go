@@ -307,7 +307,12 @@ func execSingleCommand(command string, stdin io.Reader, stdout, stderr io.Writer
 		}
 	case "history":
 
-		if len(parsedArgs) == 1 {
+		type History struct {
+			id  int
+			cmd string
+		}
+
+		if len(parsedArgs) >= 1 {
 			historyFile, err := os.Open("/tmp/readline.tmp")
 			if err != nil {
 
@@ -320,15 +325,37 @@ func execSingleCommand(command string, stdin io.Reader, stdout, stderr io.Writer
 			defer historyFile.Close()
 
 			scanner := bufio.NewScanner(historyFile)
-			lineNo := 1
+			var histories []History
+
 			for scanner.Scan() {
-				fmt.Fprintf(w, "  %d %s\n", lineNo, scanner.Text())
-				lineNo++
+				histories = append(histories, History{
+					id:  len(histories) + 1,
+					cmd: scanner.Text(),
+				})
 			}
 
 			if err := scanner.Err(); err != nil {
 				return err
 			}
+
+			if len(parsedArgs) == 2 {
+				lastN, err := strconv.Atoi(parsedArgs[1])
+				if err != nil {
+					return err
+				}
+
+				if lastN > len(histories) {
+					lastN = len(histories)
+				}
+				// fmt.Println("[DEBUG] lastN:", lastN)
+				histories = histories[len(histories)-lastN:]
+				// fmt.Printf("[DEBUG] lastN History: %v\n", histories)
+			}
+
+			for _, h := range histories {
+				fmt.Fprintf(w, "    %d  %s\n", h.id, h.cmd)
+			}
+
 		}
 
 	default:
