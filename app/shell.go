@@ -10,11 +10,12 @@ import (
 )
 
 var builtinCmds = map[string]bool{
-	"echo": true,
-	"exit": true,
-	"type": true,
-	"pwd":  true,
-	"cd":   true,
+	"echo":    true,
+	"exit":    true,
+	"type":    true,
+	"pwd":     true,
+	"cd":      true,
+	"history": true,
 }
 
 func execCommand(command string) error {
@@ -33,7 +34,6 @@ func execCommand(command string) error {
 }
 
 func execPipeline(command string) error {
-
 
 	commandParts := strings.Split(command, "|")
 
@@ -143,7 +143,6 @@ func execPipeline(command string) error {
 				}
 				execCmd.Stderr = cmd.stderr
 
-			
 				externalCmds[i] = execCmd
 			} else {
 				fmt.Fprintf(os.Stderr, "%s: command not found\n", cmd.args[0])
@@ -340,4 +339,3 @@ func execSingleCommand(command string, stdin io.Reader, stdout, stderr io.Writer
 	}
 	return nil
 }
-
