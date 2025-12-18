@@ -11,13 +11,12 @@ import (
 // Ensures gofmt doesn't remove the "fmt" and "os" imports in stage 1 (feel free to remove this!)
 var pnt = fmt.Fprint
 var out = os.Stdout
-
-
+var rl *readline.Instance
 
 func main() {
 	// TODO: Uncomment the code below to pass the first stage
-
-	rl, err := InitReadline()
+	var err error
+	rl, err = InitReadline()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)

@@ -15,6 +15,8 @@ func InitReadline() (*readline.Instance, error) {
 		AutoComplete: &ShellCompleter{
 			Commands: collectCommands(),
 		},
+		HistoryFile:       "/tmp/readline.tmp",
+		HistorySearchFold: true,
 	})
 }
 

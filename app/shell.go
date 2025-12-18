@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"os"
@@ -304,6 +305,32 @@ func execSingleCommand(command string, stdin io.Reader, stdout, stderr io.Writer
 		if err != nil {
 			fmt.Fprintf(e, "cd: %s: No such file or directory\n", parsedArgs[1])
 		}
+	case "history":
+
+		if len(parsedArgs) == 1 {
+			historyFile, err := os.Open("/tmp/readline.tmp")
+			if err != nil {
+
+				if os.IsNotExist(err) {
+					return nil
+				}
+				fmt.Fprintf(e, "history: error reading history: %v", err)
+				return err
+			}
+			defer historyFile.Close()
+
+			scanner := bufio.NewScanner(historyFile)
+			lineNo := 1
+			for scanner.Scan() {
+				fmt.Fprintf(w, "  %d %s\n", lineNo, scanner.Text())
+				lineNo++
+			}
+
+			if err := scanner.Err(); err != nil {
+				return err
+			}
+		}
+
 	default:
 		// fmt.Fprintf(os.Stderr, "Execution External: %v", parsedArgs)
 		_, err := exec.LookPath(parsedArgs[0])
