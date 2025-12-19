@@ -232,6 +232,15 @@ func execSingleCommand(command string, stdin io.Reader, stdout, stderr io.Writer
 
 	switch parsedArgs[0] {
 	case "exit":
+
+		if err := saveHistoryToFile(); err != nil {
+			fmt.Fprintln(os.Stderr, "Warning: could not save history:", err)
+		}
+
+		if rl != nil {
+			rl.Close()
+		}
+
 		if len(parsedArgs) == 1 {
 			os.Exit(0)
 		}

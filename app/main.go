@@ -22,7 +22,14 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	defer rl.Close()
+	// defer rl.Close()
+
+	defer func() {
+		if err := saveHistoryToFile(); err != nil {
+			fmt.Fprintln(os.Stderr, "Warning: could not save history:", err)
+		}
+		rl.Close()
+	}()
 
 	for {
 
