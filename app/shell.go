@@ -403,7 +403,6 @@ func execSingleCommand(command string, stdin io.Reader, stdout, stderr io.Writer
 				}
 			}
 
-
 			// check if file exists
 			var file *os.File
 

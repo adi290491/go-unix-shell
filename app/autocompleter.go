@@ -11,6 +11,9 @@ import (
 
 func InitReadline() (*readline.Instance, error) {
 	os.Remove(historyFilePath)
+
+	loadHistoryOnStartup()
+
 	return readline.NewEx(&readline.Config{
 		Prompt: prompt,
 		AutoComplete: &ShellCompleter{

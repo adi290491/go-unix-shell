@@ -16,6 +16,7 @@ var rl *readline.Instance
 func main() {
 	// TODO: Uncomment the code below to pass the first stage
 	var err error
+
 	rl, err = InitReadline()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)

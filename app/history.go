@@ -64,3 +64,30 @@ func getSessionHistory() []History {
 	}
 	return histories
 }
+
+func loadHistoryOnStartup() error {
+	histfile := os.Getenv("HISTFILE")
+	extF, err := os.Open(histfile)
+	if err != nil {
+		return err
+	}
+
+	inMemF, err := os.OpenFile(historyFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+
+	defer extF.Close()
+	defer inMemF.Close()
+
+	reader := bufio.NewScanner(extF)
+	writer := bufio.NewWriter(inMemF)
+	for reader.Scan() {
+		if reader.Text() == "" {
+			continue
+		}
+		writer.WriteString(reader.Text() + "\n")
+	}
+	writer.Flush()
+	return nil
+}
