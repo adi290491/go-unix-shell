@@ -356,6 +356,32 @@ func execSingleCommand(command string, stdin io.Reader, stdout, stderr io.Writer
 				return err
 			}
 
+		case "-w":
+			fileName := parsedArgs[2]
+			// check if file exists
+			var file *os.File
+			var err error
+
+			file, err = os.Create(fileName)
+			if err != nil {
+				return err
+			}
+
+			defer file.Close()
+
+			histories, err := fetchAllHistory(historyFilePath)
+			if err != nil {
+				return err
+			}
+
+			fileWriter := bufio.NewWriter(file)
+
+			for _, h := range histories {
+				fmt.Fprintf(fileWriter, "%s\n", h.cmd)
+			}
+
+			fileWriter.Flush()
+
 		}
 
 	default:
@@ -393,49 +419,3 @@ func execSingleCommand(command string, stdin io.Reader, stdout, stderr io.Writer
 	}
 	return nil
 }
-
-// if len(parsedArgs) >= 1 {
-// 	historyFile, err := os.Open("/tmp/readline.tmp")
-// 	if err != nil {
-
-// 		if os.IsNotExist(err) {
-// 			return nil
-// 		}
-// 		fmt.Fprintf(e, "history: error reading history: %v", err)
-// 		return err
-// 	}
-// 	defer historyFile.Close()
-
-// 	scanner := bufio.NewScanner(historyFile)
-// 	var histories []History
-
-// 	for scanner.Scan() {
-// 		histories = append(histories, History{
-// 			id:  len(histories) + 1,
-// 			cmd: scanner.Text(),
-// 		})
-// 	}
-
-// 	if err := scanner.Err(); err != nil {
-// 		return err
-// 	}
-
-// 	if len(parsedArgs) == 2 {
-// 		lastN, err := strconv.Atoi(parsedArgs[1])
-// 		if err != nil {
-// 			return err
-// 		}
-
-// 		if lastN > len(histories) {
-// 			lastN = len(histories)
-// 		}
-// 		// fmt.Println("[DEBUG] lastN:", lastN)
-// 		histories = histories[len(histories)-lastN:]
-// 		// fmt.Printf("[DEBUG] lastN History: %v\n", histories)
-// 	}
-
-// 	for _, h := range histories {
-// 		fmt.Fprintf(w, "    %d  %s\n", h.id, h.cmd)
-// 	}
-
-// }
