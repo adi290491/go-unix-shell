@@ -34,6 +34,7 @@ func main() {
 		if err == io.EOF {
 			break
 		}
+		SessionHistory = append(SessionHistory, command)
 
 		// command = `"exe with \'single quotes\'" /tmp/cow/f3`
 		if err = execCommand(command); err != nil {

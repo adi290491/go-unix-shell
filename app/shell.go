@@ -381,7 +381,46 @@ func execSingleCommand(command string, stdin io.Reader, stdout, stderr io.Writer
 			}
 
 			fileWriter.Flush()
+		case "-a":
+			fileName := parsedArgs[2]
 
+			fileHistories, err := fetchAllHistory(fileName)
+			if err != nil {
+				return err
+			}
+			fileCommandSet := make(map[string]bool)
+			for _, h := range fileHistories {
+				fileCommandSet[h.cmd] = true
+			}
+
+			var newCommands []string
+
+			for i := lastAppendedIdx; i < len(SessionHistory); i++ {
+				h := SessionHistory[i]
+
+				if !fileCommandSet[h] || strings.HasPrefix(h, "history -a") {
+					newCommands = append(newCommands, h)
+				}
+			}
+
+
+			// check if file exists
+			var file *os.File
+
+			file, err = os.OpenFile(fileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+			if err != nil {
+				return err
+			}
+
+			defer file.Close()
+
+			fileWriter := bufio.NewWriter(file)
+			for _, cmd := range newCommands {
+				fmt.Fprintf(fileWriter, "%s\n", cmd)
+			}
+			fileWriter.Flush()
+
+			lastAppendedIdx = len(SessionHistory)
 		}
 
 	default:

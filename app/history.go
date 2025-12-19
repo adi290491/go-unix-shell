@@ -11,6 +11,9 @@ type History struct {
 	cmd string
 }
 
+var SessionHistory []string
+var lastAppendedIdx int
+
 func fetchAllHistory(fileName string) ([]History, error) {
 
 	historyFile, err := os.Open(fileName)
@@ -49,4 +52,15 @@ func fetchLastNHistory(n int) ([]History, error) {
 		n = len(histories)
 	}
 	return histories[len(histories)-n:], nil
+}
+
+func getSessionHistory() []History {
+	var histories []History
+	for i, cmd := range SessionHistory {
+		histories = append(histories, History{
+			id:  i + 1,
+			cmd: cmd,
+		})
+	}
+	return histories
 }
