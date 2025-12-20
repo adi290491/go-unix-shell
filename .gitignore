@@ -1,0 +1,31 @@
+# Binaries
+/tmp/
+*.exe
+*.dll
+*.so
+*.dylib
+myshell
+/tmp/codecrafters-build-shell-go
+
+# Test files
+*.test
+*.out
+
+# Go
+vendor/
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# History files (optional - if you don't want to commit them)
+.myshell_history
+/tmp/readline.tmp
