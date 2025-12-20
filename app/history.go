@@ -70,30 +70,30 @@ func loadHistoryOnStartup() error {
 	if histfile == "" {
 		return nil
 	}
-	// extF, err := os.Open(histfile)
-	// if err != nil {
-	// 	return err
-	// }
+	extF, err := os.Open(histfile)
+	if err != nil {
+		return err
+	}
 
-	// inMemF, err := os.OpenFile(historyFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	// if err != nil {
-	// 	return err
-	// }
+	inMemF, err := os.OpenFile(historyFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
 
-	// defer extF.Close()
-	// defer inMemF.Close()
+	defer extF.Close()
+	defer inMemF.Close()
 
-	// reader := bufio.NewScanner(extF)
-	// writer := bufio.NewWriter(inMemF)
-	// for reader.Scan() {
-	// 	if reader.Text() == "" {
-	// 		continue
-	// 	}
-	// 	writer.WriteString(reader.Text() + "\n")
-	// }
-	// writer.Flush()
-	// return nil
-	return writeToFile(histfile, historyFilePath)
+	reader := bufio.NewScanner(extF)
+	writer := bufio.NewWriter(inMemF)
+	for reader.Scan() {
+		if reader.Text() == "" {
+			continue
+		}
+		writer.WriteString(reader.Text() + "\n")
+	}
+	writer.Flush()
+	return nil
+	// return writeToFile(histfile, historyFilePath, true)
 }
 
 func saveHistoryToFile() error {
@@ -103,33 +103,41 @@ func saveHistoryToFile() error {
 		return nil
 	}
 
-	// inMemF, err := os.Open(historyFilePath)
-	// if err != nil {
-	// 	return err
-	// }
-	// defer inMemF.Close()
+	extF, err := os.OpenFile(histFile, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0644)
+	if err != nil {
+		return err
+	}
+	defer extF.Close()
 
-	// extF, err := os.OpenFile(histFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	// if err != nil {
-	// 	return err
-	// }
-	// defer extF.Close()
+	reader := bufio.NewScanner(extF)
+	extCommandSet := make(map[string]bool)
+	for reader.Scan() {
+		extCommandSet[reader.Text()] = true
+	}
 
-	// reader := bufio.NewScanner(inMemF)
-	// writer := bufio.NewWriter(extF)
+	inMemF, err := os.Open(historyFilePath)
+	if err != nil {
+		return err
+	}
+	defer inMemF.Close()
 
-	// for reader.Scan() {
-	// 	line := reader.Text()
-	// 	if line != "" {
-	// 		fmt.Fprintln(writer, line)
-	// 	}
-	// }
-	// writer.Flush()
-	// return nil
-	return writeToFile(historyFilePath, histFile)
+	reader = bufio.NewScanner(inMemF)
+	writer := bufio.NewWriter(extF)
+	for reader.Scan() {
+		line := reader.Text()
+		if line == "" {
+			continue
+		}
+		if !extCommandSet[line] {
+			writer.WriteString(line + "\n")
+		}
+	}
+	writer.Flush()
+	return nil
+
 }
 
-func writeToFile(srcFile, dstFile string) error {
+func writeToFile(srcFile, dstFile string, skipEmpty bool) error {
 	src, err := os.Open(srcFile)
 	if err != nil {
 		return err
@@ -147,7 +155,7 @@ func writeToFile(srcFile, dstFile string) error {
 	dstWriter := bufio.NewWriter(dst)
 
 	for srcScanner.Scan() {
-		if srcScanner.Text() == "" {
+		if skipEmpty && srcScanner.Text() == "" {
 			continue
 		}
 		dstWriter.WriteString(srcScanner.Text() + "\n")
