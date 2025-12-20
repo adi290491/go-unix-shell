@@ -2,7 +2,9 @@
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)]()
 
-# GoShell - A Feature-Rich Unix Shell in Go
+# Go-Unix-Shell - A Feature-Rich Unix Shell in Go
+
+**Built from scratch by Aditya Sawant** as part of the CodeCrafters challenge
 
 A fully-featured, POSIX-compliant Unix shell implementation built from scratch in Go. This project demonstrates advanced system programming concepts including process management, I/O redirection, pipeline implementation, and interactive command-line features.
 
