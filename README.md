@@ -1,3 +1,7 @@
+[![Go Version](https://img.shields.io/badge/Go-1.16+-00ADD8?style=flat&logo=go)](https://golang.org)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)]()
+
 # GoShell - A Feature-Rich Unix Shell in Go
 
 A fully-featured, POSIX-compliant Unix shell implementation built from scratch in Go. This project demonstrates advanced system programming concepts including process management, I/O redirection, pipeline implementation, and interactive command-line features.
