@@ -8,6 +8,20 @@
 
 A fully-featured, POSIX-compliant Unix shell implementation built from scratch in Go. This project demonstrates advanced system programming concepts including process management, I/O redirection, pipeline implementation, and interactive command-line features.
 
+## 📸 Screenshots
+
+### Basic Commands
+![Basic Commands](docs/screenshots/basic-commands.png)
+
+### Pipeline Execution
+![Pipeline Demo](docs/screenshots/pipeline-demo.png)
+
+### Test Results
+![All Tests Passing](docs/screenshots/test-results.png)
+
+### Advanced Features
+![Advanced Features](docs/screenshots/advanced-features.png)
+
 ## 🎯 Features
 
 ### Core Shell Functionality

@@ -217,7 +217,7 @@ echo "=========================================="
 echo ""
 
 if [ $TESTS_FAILED -eq 0 ]; then
-    echo -e "${GREEN}✓ All tests passed! Ready to share on LinkedIn!${NC}"
+    echo -e "${GREEN}✓ All tests passed!!${NC}"
     exit 0
 else
     echo -e "${RED}✗ $TESTS_FAILED test(s) failed${NC}"
