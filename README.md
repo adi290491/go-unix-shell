@@ -333,8 +333,8 @@ MIT License - feel free to use this code for learning purposes.
 ## 👤 Author
 
 **Your Name**
-- GitHub: [@yourusername](https://github.com/yourusername)
-- LinkedIn: [your-profile](https://linkedin.com/in/yourprofile)
+- GitHub: [@adi290491](https://github.com/adi290491)
+- LinkedIn: [adityassawant](https://linkedin.com/in/adityassawant)
 
 ---
 
